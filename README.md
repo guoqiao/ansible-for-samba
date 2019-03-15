@@ -1,7 +1,6 @@
-# Introduction to Ansible
+# Ansible for Samba
 
-This repository includes slides for an Introduction to Ansible course. Please
-see the [course outline](OUTLINE.md) for more information.
+Refer to [content.md](slides/content.md)
 
 Run it:
 

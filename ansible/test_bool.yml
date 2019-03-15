@@ -1,0 +1,44 @@
+#!/usr/bin/env ansible-playbook
+
+- name: run tasks
+  hosts: localhost
+  tasks:
+
+    - name: test True
+      debug:
+        msg: "bool value for {{item}} is {{item|bool}}"
+      loop:
+        - yes
+        - Yes
+        - YES
+        - y
+        - Y
+        - true
+        - True
+        - TRUE
+        - on
+        - On
+        - ON
+        - 1
+        - "a str"
+        - ["a list"]
+        - {'name': 'a dict'}
+
+    - name: test False
+      debug:
+        msg: "bool value for {{item}} is {{item|bool}}"
+      loop:
+        - no
+        - NO
+        - n
+        - N
+        - false
+        - False
+        - FALSE
+        - off
+        - Off
+        - OFF
+        - 0
+        - ""
+        - []
+        - {}
