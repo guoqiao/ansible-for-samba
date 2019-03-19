@@ -155,8 +155,8 @@ OS_SERVER: {name: "dc0", flavor: "c1.c2r16"}
 
 A script to return hosts via cli as json dynamicly
 
-    autobuild/inventory/openstack_inventory.py --list
-    autobuild/inventory/rax.py --list
+    autobuild/inventory/openstack_inventory.py --list --refresh
+    autobuild/inventory/rax.py --list --refresh-cache
     vagrant_inventory.py --list
     docker_inventory.py --list
 
