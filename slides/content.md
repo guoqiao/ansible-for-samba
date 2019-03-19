@@ -379,7 +379,7 @@ Ansible Role to setup infrastructure and servers in openstack cloud.
     - name: run role openstack
       hosts: localhost
       tasks:
-        - name: setup infra and launch 1 ubuntu server
+        - name: include role
           include_role:
             name: openstack
 
@@ -450,9 +450,9 @@ Ansible Role to setup infrastructure and servers in openstack cloud.
 
 ### windows roles
 
-- [windows-common](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-common)
-- [windows-dc](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-dc)
-- [windows-wpts](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-wpts)
+- [windows-common](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/tree/master/roles/windows-common)
+- [windows-dc](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/tree/master/roles/windows-dc)
+- [windows-wpts](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/tree/master/roles/windows-wpts)
 
 
 ### other roles
@@ -468,8 +468,6 @@ refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud
 
 
 ### cloud-network/traffic-replay.yml
-
-    # ./traffic-replay.yml -e ENV_NAME=traffic -e primary_dc_name=traffic-dc0
 
     - name: create servers in openstack cloud
       hosts: localhost
@@ -516,6 +514,8 @@ refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud
             run_cleanup: yes
             run_replay: yes
             run_summary: yes
+
+    # > ./traffic-replay.yml -e ENV_NAME=traffic -e primary_dc_name=traffic-dc0
 
 
 ### windows-domain.yml
