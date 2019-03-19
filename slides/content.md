@@ -230,7 +230,7 @@ run a playbook:
 
 - inventory file: `hosts.ini`
 - yml file: group_vars/group.yml, vars.yml
-- play/task/role
+- play/task: vars/vars_files
 - cli option: `-e ENV_NAME=gitlab-runner`
 - facts/set_fact/register
 
