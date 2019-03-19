@@ -467,7 +467,64 @@ Ansible Role to setup infrastructure and servers in openstack cloud.
 refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/tree/master/cloud-network)
 
 
-### cloud-network/traffic-replay.yml
+###  samba-domain.yml
+
+    # cloud-netowrk/samba-domain.yml
+    - name: create servers in openstack cloud
+      hosts: localhost
+      tasks:
+        - name: include role openstack
+          include_role:
+            name: openstack
+            vars_from: ubuntu
+          vars:
+            OS_SERVERS:
+              - name: "{{ENV_NAME}}-dc0"
+                flavor: c1.c2r8
+                groups:
+                  - samba-common
+                  - samba-dc
+              - name: "{{ENV_NAME}}-dc1"
+                flavor: c1.c2r8
+                groups:
+                  - samba-common
+                  - samba-dc
+              - name: "{{ENV_NAME}}-runner"
+                flavor: c1.c4r16
+                groups:
+                  - samba-common
+                  - samba-traffic-runner
+
+    - name: include role samba-common
+      hosts: "{{ENV_NAME}}:&samba-common"
+      tasks:
+        - name: include role samba-common
+          include_role:
+            name: samba-common
+
+    - name: include role samba-dc
+      hosts: "{{ENV_NAME}}:&samba-dc"
+      tasks:
+        - name: include role samba-dc
+          include_role:
+            name: samba-dc
+
+    - name: include role samba-traffic-runner
+      hosts: "{{ENV_NAME}}:&samba-traffic-runner"
+      tasks:
+        - name: include role samba-traffic-runner
+          include_role:
+            name: samba-traffic-runner
+
+    # cloud-netowrk/samba-domain-r50k.sh
+    ./samba-domain.yml -v \
+        -e ENV_NAME=r50k \
+        -e primary_dc_name=r50k-dc0 \
+        -e samba_backup_file=$HOME/backup/samba-backup-docker-mdb-50000-max-50000.tar.bz2 \
+        "$@"
+
+
+### traffic-replay.yml
 
     - name: create servers in openstack cloud
       hosts: localhost
