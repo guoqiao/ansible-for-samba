@@ -348,6 +348,7 @@ run a playbook:
 
 ## Role
 
+    # > ansible-galaxy init example
     example
     ├── defaults
     │   └── main.yml
