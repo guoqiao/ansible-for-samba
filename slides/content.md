@@ -106,16 +106,6 @@ OS_SERVER: {name: "dc0", flavor: "c1.c2r16"}
 - fetch results as json/yaml
 
 
-## Ansible Install
-
-    pip install ansible
-
-    # Install source
-    git clone https://github.com/ansible/ansible.git
-    cd ansible
-    pip install -I -e .
-
-
 ## Inventory
 
     [servers]
@@ -165,10 +155,10 @@ OS_SERVER: {name: "dc0", flavor: "c1.c2r16"}
 
 A script to return hosts via cli as json dynamicly
 
-    autobuild/inventory/openstack_inventory.py
-    autobuild/inventory/rax.py
-    vagrant_inventory.py
-    docker_inventory.py
+    autobuild/inventory/openstack_inventory.py --list
+    autobuild/inventory/rax.py --list
+    vagrant_inventory.py --list
+    docker_inventory.py --list
 
 
 ### Inventory path
@@ -178,6 +168,16 @@ A script to return hosts via cli as json dynamicly
     inventory = ./inventory/  # ansible.cfg as dir
     ANSIBLE_INVENTORY=$HOME/hosts.ini  # env vars
 
+
+
+## Ansible Install
+
+    pip install ansible
+
+    # Install source
+    git clone https://github.com/ansible/ansible.git
+    cd ansible
+    pip install -I -e .
 
 
 ## Ad hoc commands
@@ -229,16 +229,10 @@ run a playbook:
 ## Variable sources
 
 - inventory file: `hosts.ini`
-- group_vars: `all.yml/vagrant.yml`
-- vars_file: `include_vars`
-- vault: vault.yml
-- role: `defaults/main.yml`, `vars/main.yml`
-- task: vars
-- play: vars, vars_files
+- yml file: group_vars/group.yml, vars.yml
+- play/task/role
 - cli option: `-e ENV_NAME=gitlab-runner`
-- facts
-- set_fact
-- register
+- facts/set_fact/register
 
 
 ## Vault
@@ -354,110 +348,249 @@ run a playbook:
 
 ## Role
 
-    myrole/
-      defaults/
-      tasks/
-      vars/
-      handlers/
-      templates/
-      files/
-      meta/
+    example
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── README.md
+    ├── tasks
+    │   └── main.yml
+    ├── templates
+    ├── tests
+    │   ├── inventory
+    │   └── test.yml
+    └── vars
+        └── main.yml
 
 
 
+### [role: openstack](https://gitlab.com/catalyst-samba/ansible-role-openstack)
+
+Ansible Role to setup infrastructure and servers in openstack cloud.
+
+
+#### default
+
+    - name: run role openstack
+      hosts: localhost
+      tasks:
+        - name: setup infra and launch 1 ubuntu server
+          include_role:
+            name: openstack
+
+
+#### tasks_from
+
+    - name: run role openstack
+      hosts: localhost
+      vars:
+        ENV_NAME: gitlab-runner
+      tasks:
+        - name: run openstack role for infra only
+          include_role:
+            name: openstack
+            tasks_from: infra  # servers
+
+
+#### vars_from
+
+    - name: run role openstack
+      hosts: localhost
+      tasks:
+        - name: run openstack role to launch windows instances
+          include_role:
+            name: openstack
+            vars_from: windows
+          vars:
+            ENV_NAME: wintest
+            OS_SERVERS:
+              - name: win0
+              - name: win1
+
+
+#### large scale network
+
+    - name: run role openstack
+      hosts: localhost
+      tasks:
+        - name: run openstack role to create large number of servers in parallel
+          include_role:
+            name: openstack
+          vars:
+            ENV_NAME: indeed
+            OS_SERVERS: "{{ range(50)|list }}"
 
 
 
+### [role: rackspace](https://gitlab.com/catalyst-samba/ansible-role-rackspace)
+
+    - name: run role rackspace
+      hosts: localhost
+      tasks:
+        - name: run rackspace role to launch server
+          include_role:
+            name: rackspace
+          vars:
+            RS_SERVER_NAME: rax0
+            RS_SERVER_GROUPS: ['gitlab-runner', 'rackspace']
+            RS_FLAVOR_ID: 4
+
+
+### samba roles
+
+- [samba-common](https://gitlab.com/catalyst-samba/ansible-role-samba-common)
+- [samba-dc](https://gitlab.com/catalyst-samba/ansible-role-samba-dc)
+- [samba-traffic-runner](https://gitlab.com/catalyst-samba/ansible-role-samba-traffic-runner)
+
+
+### windows roles
+
+- [windows-common](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-common)
+- [windows-dc](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-dc)
+- [windows-wpts](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/roles/windows-wpts)
+
+
+### other roles
+- [locale](https://gitlab.com/catalyst-samba/ansible-role-locale)
+- [xbuild](https://gitlab.com/catalyst-samba/ansible-role-xbuild)
+- [gitlab-runner](https://gitlab.com/catalyst-samba/ansible-role-gitlab-runner)
 
 
 
+## playbook examples
+
+refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud-autobuild/tree/master/cloud-network)
+
+
+### cloud-network/traffic-replay.yml
+
+    # ./traffic-replay.yml -e ENV_NAME=traffic -e primary_dc_name=traffic-dc0
+
+    - name: create servers in openstack cloud
+      hosts: localhost
+      tasks:
+        - name: include role openstack
+          include_role:
+            name: openstack
+            vars_from: ubuntu
+          vars:
+            OS_SERVERS:
+              - name: "{{ENV_NAME}}-dc0"
+                flavor: c1.c2r8
+                groups:
+                  - samba-common
+                  - samba-dc
+              - name: "{{ENV_NAME}}-runner"
+                flavor: c1.c4r16
+                groups:
+                  - samba-common
+                  - samba-traffic-runner
+
+    - name: include role samba-common
+      # hosts pattern, use meta groups
+      hosts: "{{ENV_NAME}}:&samba-common"
+      tasks:
+        - name: include role samba-common
+          include_role:
+            name: samba-common
+
+    - name: include role samba-dc
+      hosts: "{{ENV_NAME}}:&samba-dc"
+      tasks:
+        - name: include role samba-dc
+          include_role:
+            name: samba-dc
+
+    - name: include role samba-traffic-runner
+      hosts: "{{ENV_NAME}}:&samba-traffic-runner"
+      tasks:
+        - name: include role samba-traffic-runner
+          include_role:
+            name: samba-traffic-runner
+          vars:
+            run_cleanup: yes
+            run_replay: yes
+            run_summary: yes
+
+
+### windows-domain.yml
+
+    - name: create 2 windows instances
+      hosts: localhost
+      tasks:
+        - name: include role openstack
+          include_role:
+            name: openstack
+            vars_from: windows
+          vars:
+            ENV_NAME: windomain
+            OS_SERVERS: "{{range(2)|list}}"
+            OS_META_GROUPS:
+              - windows-common
+              - windows-dc
+
+    - name: apply role windows-common
+      hosts: "windomain:&windows-common"
+      vars:
+        ENV_NAME: windomain
+        primary_dc_name: windomain-win0
+      roles:
+        - windows-common
+        - windows-dc
+
+
+### gitlab-ci/openstack.yml
+
+    - name: launch instance
+      hosts: localhost
+      tasks:
+        - name: include role openstack
+          include_role:
+            name: openstack
+          vars:
+            OS_SERVER_NAME: "{{ RUNNER_NAME }}"
+
+    - name: setup gitlab-runner
+      hosts: "{{ RUNNER_NAME }}"
+      tasks:
+        - name: include role gitlab-runner
+          include_role:
+            name: gitlab-runner
+            vars_from: docker-machine/openstack
+          vars:
+            gitlab_runner_register_targets: "{{vault_gitlab_runner_register_targets_openstack}}"
+
+    # > ./openstack.yml -v -e ENV_NAME=gitlab-runner -e RUNNER_NAME=gitlab-runner-openstack-$(date +%m%d)
+
+
+### gitlab-ci/rackspace.yml
+
+    - name: launch instance
+      hosts: localhost
+      tasks:
+        - name: include role rackspace
+          include_role:
+            name: rackspace
+          vars:
+            RS_SERVER_NAME: "{{ RUNNER_NAME }}"
+
+    - name: setup gitlab-runner
+      hosts: "{{ RUNNER_NAME }}"
+      tasks:
+        - name: include role gitlab-runner
+          include_role:
+            name: gitlab-runner
+            vars_from: docker-machine/rackspace
+          vars:
+            gitlab_runner_register_targets: "{{vault_gitlab_runner_register_targets_rackspace}}"
+
+    # > ./rackspace.yml -v -e ENV_NAME=gitlab-runner -e RUNNER_NAME=gitlab-runner-rackspace-$(date +%m%d)
 
 
 
-
-## Module examples
-
-## ansible.cfg
-
-
-## tests
-
-
-## role ang ansible-galaxy
-
-
-## openstack role
-
-## traffic replay
-
-## gitlab-runner
-
-
-## samba-common|samba-dc|samba-traffic-runner
-
-
-## Title <!-- .slide: class="image-slide" -->
-![placeholder image](img/800x400.gif "Placeholder image")
-
-
-
-### List title
-* List item ![placeholder image](img/300x400.gif "Placeholder image") <!-- .element: class="img-right" -->
-* List item
-* List item
-
-
-
-### Fragmented list
-* List item <!-- .element: class="fragment" -->
-* List item <!-- .element: class="fragment" -->
-* List item <!-- .element: class="fragment" -->
-![placeholder image](img/500x200.gif "Placeholder image") <!-- .element: class="img-centered" -->
-
-
-
-## Title (press down to see vertical slides) <!-- .slide: class="title-slide banner-3" --> <!-- .element: class="yellow" -->
-
-
-### Paragraph
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris at scelerisque eros. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Aliquam placerat posuere nibh vel dapibus.
-
-
-### Blockquote
-> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris at scelerisque eros. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Aliquam placerat posuere nibh vel dapibus.
-
-
-### Nested lists
-+ One
-+ Two
-+ Three
-	- Nested One
-	- Nested Two
-
-
-
-### Title
-Some text
-
-	function linkify( selector ) {
-		if( supports3DTransforms ) {
-
-			var nodes = document.querySelectorAll( selector );
-
-			for( var i = 0, len = nodes.length; i < len; i++ ) {
-				var node = nodes[i];
-
-				if( !node.className ) {
-					node.className += ' roll';
-				}
-			}
-		}
-	}
-
-
-
-### Image backgrounds <!-- .slide: data-background="img/800x600.gif" -->
-
-
-
+## Q & A
 ![freedom to innovate](css/theme/images/freedom-to-innovate.svg "freedom to innovate") <!-- .slide: class="image-slide" --> <!-- .element: class="cat-slogan-image" -->
