@@ -547,7 +547,6 @@ refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud
                   - samba-traffic-runner
 
     - name: include role samba-common
-      # hosts pattern, use meta groups
       hosts: "{{ENV_NAME}}:&samba-common"
       tasks:
         - name: include role samba-common
@@ -571,6 +570,15 @@ refer to [autobuild/cloud-network](https://gitlab.com/catalyst-samba/samba-cloud
             run_cleanup: yes
             run_replay: yes
             run_summary: yes
+
+    - name: delete env if required
+      hosts: localhost
+      tasks:
+        - name: include role openstack
+          include_role:
+            name: openstack
+            vars_from: absent
+          when: delete_env is defined and delete_env
 
     # > ./traffic-replay.yml -e ENV_NAME=traffic -e primary_dc_name=traffic-dc0
 
