@@ -161,6 +161,14 @@ A script to return hosts via cli as json dynamicly
     docker_inventory.py --list
 
 
+### clouds.yaml
+
+    ansible:
+      use_hostnames: True
+      expand_hostvars: False
+      fail_on_errors: True
+
+
 ### Inventory path
 
     /etc/ansible/hosts  # default
